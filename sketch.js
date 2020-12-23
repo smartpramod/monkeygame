@@ -1,195 +1,345 @@
-var PLAY = 1;
-var END = 0;
-var gameState = PLAY;
+//Declaration of Global Variables
+var monkey,monkey_run,monkey_stop;
+var banana ,banana_img;
+var obstacle,obstacle_img;
+var orange, orange_img;
+//Group variables
+var foodGroup,obsGroup,orangeGroup;
+//Score & losing system
+var survivalTime,score,chances;
+var ground,ground_img;
+var gameOver,gameOver_img;
+var restart,restart_img;
+//Game States
+var START=1;
+var PLAY=2;
+var END=0;
+var gameState=START;
+//sound variables
+var longjump_sound;
+var jumpSound;
+var dieSound;
+var checkPointSound;
+var gameOverSound;
 
-var trex, trex_running, trex_collided;
-var ground, invisibleGround, groundImage;
-
-var cloudsGroup, cloudImage;
-var obstaclesGroup, obstacle1, obstacle2, obstacle3, obstacle4, obstacle5, obstacle6;
-
-var score=0;
-
-var gameOver, restart;
-
-localStorage["HighestScore"] = 0;
-
-function preload(){
-  trex_running =   loadAnimation("trex1.png","trex3.png","trex4.png");
-  trex_collided = loadAnimation("trex_collided.png");
+function preload()
+{
+  //To load monkey animation
+  monkey_run =   loadAnimation("sprite_0.png","sprite_1.png","sprite_2.png","sprite_3.png","sprite_4.png","sprite_5.png","sprite_6.png","sprite_7.png","sprite_8.png");
   
-  groundImage = loadImage("ground2.png");
-  
-  cloudImage = loadImage("cloud.png");
-  
-  obstacle1 = loadImage("obstacle1.png");
-  obstacle2 = loadImage("obstacle2.png");
-  obstacle3 = loadImage("obstacle3.png");
-  obstacle4 = loadImage("obstacle4.png");
-  obstacle5 = loadImage("obstacle5.png");
-  obstacle6 = loadImage("obstacle6.png");
-  
-  gameOverImg = loadImage("gameOver.png");
-  restartImg = loadImage("restart.png");
+
+  //To load banana and obstacle
+  banana_img = loadImage("banana.png");
+  obstacle_img = loadImage("obstacle.png");
+  ground_img=loadImage("ground2.png");
+  orange_img=loadImage("orange.png");
+  gameOver_img=loadImage("gameover.png");
+  restart_img=loadImage("restart.png");
+
+  //To load sounds  
+  longjump_sound=loadSound("longjump.mp3");
+  jumpSound=loadSound("jump.mp3");
+  dieSound=loadSound("die.mp3");
+  checkPointSound=loadSound("checkPoint.mp3");
+  gameOverSound=loadSound("gameOver.mp3");
 }
+//600,400
+
 
 function setup() {
-  createCanvas(600, 200);
+  //To create a canvas
+  createCanvas(windowWidth,windowHeight);
   
-  trex = createSprite(50,180,20,50);
+  //To create monkey sprite
+  monkey=createSprite(60,height-75,10,10);  
+  monkey.addAnimation("run",monkey_run);
+  //Scaling to adjust the animation
+  monkey.scale=0.110;
+  //monkey.debug=true;
+  //To make monkey look like it is on the ground not outside it
+  monkey.setCollider("rectangle",0,0,550,340);
   
-  trex.addAnimation("running", trex_running);
-  trex.addAnimation("collided", trex_collided);
-  trex.scale = 0.5;
+  //To create ground sprite
+  ground=createSprite(width/2,height-42,1200,8);
+  ground.addImage(ground_img);
   
-  ground = createSprite(200,180,400,20);
-  ground.addImage("ground",groundImage);
-  ground.x = ground.width /2;
-  ground.velocityX = -(6 + 3*score/100);
+  //To declare new Groups
+  foodGroup=new Group();
+  obsGroup=new Group();
+  orangeGroup=new Group();
   
-  gameOver = createSprite(300,100);
-  gameOver.addImage(gameOverImg);
+  //Initial value of survival Time
+  survivalTime=10;
+  //Initial value of score
+  score=0;
+  //Initial value of chances
+  chances=3;
   
-  restart = createSprite(300,140);
-  restart.addImage(restartImg);
+  //To create gameOver sprite
+  gameOver=createSprite(width/2,height-250,10,10)
+  gameOver.addImage(gameOver_img);
+  gameOver.scale=1.5;
   
-  gameOver.scale = 0.5;
-  restart.scale = 0.5;
-
-  gameOver.visible = false;
-  restart.visible = false;
-  
-  invisibleGround = createSprite(200,190,400,10);
-  invisibleGround.visible = false;
-  
-  cloudsGroup = new Group();
-  obstaclesGroup = new Group();
-  
-  score = 0;
+  //To create restart 
+  restart=createSprite(width-295,height-150,10,10);
+  restart.addImage(restart_img);
+  restart.scale=0.3;
 }
 
-function draw() {
-  //trex.debug = true;
-  background("red");
-  text("Score: "+ score, 500,50);
+
+function draw()
+{
+  //To assign the background
+  background("white");
   
-  if (gameState===PLAY){
-    score = score + Math.round(getFrameRate()/60);
-    ground.velocityX = -(6 + 3*score/100);
-  
-    if(keyDown("space") && trex.y >= 159) {
-      trex.velocityY = -12;
-    }
-  
-    trex.velocityY = trex.velocityY + 0.8
-  
-    if (ground.x < 0){
-      ground.x = ground.width/2;
-    }
-  
-    trex.collide(invisibleGround);
-    spawnClouds();
-    spawnObstacles();
-  
-    if(obstaclesGroup.isTouching(trex)){
-        gameState = END;
-    }
+  if(gameState===START)
+  {
+   //To make restart & game Over invisible
+   gameOver.visible=false;
+   restart.visible=false;
+    
+   //Instructions for playing this game/USER GUIDE
+   background("azure");
+   fill("red");
+   textSize(20);
+   text("Read all the instructions carefully before playing:-",50,80);
+   fill("red");
+   textSize(18);
+   text("1.Press Space Key to Start the Game",50,110);
+   fill("black");
+   text("2.Press UP Arrow Key for long jump",50,135);
+   text("3.Press Space Key to Jump",50,160);
+   text("4.Try to collect max oranges to get more survival time",50,190);
+   text("5.Don't Let Survival Time 0 otherwise game will end",50,220);
+   text("6.Collect bananas to score and get survival time",50,250);
+   text("7.Avoid the obstacles otherwise you will lose 1 chance from 3",50,280);
+   text("8.Try to Score high, With more score game will get more difficult",50,310);
+   text("9.Avoid Long Jump unnecessary as it decrease survival time",50,340);
+    
+   textSize(30);
+   text("ALL THE BEST!!",200,385);
+   
+   //To make monkey & ground invisible during start state
+   monkey.visible=false;
+   ground.visible=false;
+
+   //Condition for entering in PLAY state
+   if(keyDown("space"))
+   {
+     gameState=PLAY;
+   }
+   
   }
-  else if (gameState === END) {
-    gameOver.visible = true;
-    restart.visible = true;
+  else if(gameState===PLAY)
+  {
+    //To make monkey & ground visible during PLAY state
+    monkey.visible=false;
+    ground.visible=false;
+    ground.visible=true;
+    monkey.visible=true;
     
-    //set velcity of each game object to 0
-    ground.velocityX = 0;
-    trex.velocityY = 0;
-    obstaclesGroup.setVelocityXEach(0);
-    cloudsGroup.setVelocityXEach(0);
+    //To increase the ground speed with increasement in score
+    ground.velocityX=-(4+score/10);
     
-    //change the trex animation
-    trex.changeAnimation("collided",trex_collided);
-    
-    //set lifetime of the game objects so that they are never destroyed
-    obstaclesGroup.setLifetimeEach(-1);
-    cloudsGroup.setLifetimeEach(-1);
-    
-    if(mousePressedOver(restart)) {
-      reset();
+    //Adding background changing effect
+    if(score%10===0)
+    {
+      background("yellow");
+    }else if(score%5===0)
+    {
+      background("lightgreen");
+    }else if(score%8===0)
+    {
+      background("pink");
     }
+    
+    //To make the monkey jump to surmount obstacles
+    if(keyDown("space")&&monkey.y>320)
+    { 
+      //To assign upward velocity to monkey
+      monkey.velocityY=-11;
+      jumpSound.play();
+    }
+    
+    //To make monkey long jump to collect oranges
+    else if(keyDown("UP_ARROW")&&monkey.y>320)
+    {
+      //To make monkey move up
+      monkey.velocityY=-16.5;
+      //Monkey get hungry and survival time decrease with long jump
+      survivalTime=survivalTime-1;
+      //To play long jump sound
+      longjump_sound.play();
+    } 
+    
+    //To add gravity 
+    monkey.velocityY=monkey.velocityY+0.5;
+    
+    //To increase the score when monkey touches banana
+    if(monkey.isTouching(foodGroup))
+    {
+      foodGroup.destroyEach();
+      score=score+2;
+      survivalTime=survivalTime+5;
+    }
+    
+    //To add bonus to score when monkey touches oranges
+    if(monkey.isTouching(orangeGroup))
+    {
+      orangeGroup.destroyEach();
+      score=score+5;
+      survivalTime=survivalTime+10;
+    } 
+    
+    
+    //To decrease survival time with frame rate
+    if(frameCount%100===0)
+    {
+      survivalTime=survivalTime-1;
+    }
+    
+    //To detect and decrease the chanes when monkey touches any       obstacles
+    if(monkey.isTouching(obsGroup))
+    {
+      chances=chances-1;
+      obsGroup.destroyEach();
+      dieSound.play();
+    }
+    
+    //To play a beep sound in multiple of 20 i.e.20,40,60,80
+    if(score>0&&score%20===0)
+    {
+      //Adding beep sound 
+      checkPointSound.play();
+    }
+    
+    //To call other functions in draw function for execution
+    obstacles();
+    food();
+    bonusFood();
+  }
+  else if(gameState===END)
+  {
+    //To make restart & game Over invisible
+    gameOver.visible=true;
+    restart.visible=true;
+    
+    //Destroying objects and setting up their velocity 0 when the     game ends
+    ground.velocityX=0
+    foodGroup.setVelocityEach(0);
+    foodGroup.destroyEach();
+    orangeGroup.setVelocityEach(0);
+    orangeGroup.destroyEach();
+    obsGroup.setVelocityEach(0);
+    obsGroup.destroyEach();
   }
   
+  if(ground.x<0)
+  {
+    //To give infinite scrolling effect to ground
+    ground.x=ground.width/2;
+  }
+
+  //To make monkey collide with the ground
+  monkey.collide(ground);
   
+  //End state condition
+  if(chances===0||survivalTime===0)
+  {
+    gameState=END;
+  }
+  
+  //To restart the game when clicked on restart button
+  if(mousePressedOver(restart))
+  {
+    //Calling restart function
+    reset();
+  }
+
+  
+  //To draw the sprites
   drawSprites();
+  
+  //Displaying scoring & losing system
+  fill("black");
+  textSize(18);
+  text("Score Board: "+score,20,35);
+  text("Survival Time: "+survivalTime,450,35);
+  text("Chances: "+chances,250,35);
+  
+  
 }
 
-function spawnClouds() {
-  //write code here to spawn the clouds
-  if (frameCount % 60 === 0) {
-    var cloud = createSprite(600,120,40,10);
-    cloud.y = Math.round(random(80,120));
-    cloud.addImage(cloudImage);
-    cloud.scale = 0.5;
-    cloud.velocityX = -3;
-    
-     //assign lifetime to the variable
-    cloud.lifetime = 200;
-    
-    //adjust the depth
-    cloud.depth = trex.depth;
-    trex.depth = trex.depth + 1;
-    
-    //add each cloud to the group
-    cloudsGroup.add(cloud);
+
+function obstacles()
+{
+  //To make obstacles appear at interval of 130 frames
+  if(frameCount%170===0)
+  {
+  //To create obstacle sprite
+  obstacle=createSprite(width,height-70,10,10);
+  //To add image to banana
+  obstacle.addImage(obstacle_img);
+  //Scaling to adjust banana
+  obstacle.scale=0.15;
+  //To assign velocity to banana
+  obstacle.velocityX=-(4+score/15);
+  //To assign lifetime to banana to avoid memory leaks
+  obstacle.lifetime=width/obstacle.velocity;
+  //Adding obstacles to obsgroup
+  obsGroup.add(obstacle);
+  }
+}
+
+function food()
+{
+  //To make banana appear at interval of 150 frames
+  if(frameCount%150===0)
+  {
+    //To create banana sprite
+    banana=createSprite(600,Math.round(random(120,270)),10,10);
+    //To add image to banana
+    banana.addImage(banana_img);
+    //To assign velocity to banana
+    banana.velocityX=-(3.5+score/10);
+    //Scaling to adjust image
+    banana.scale=0.1;
+    //To assign lifetime to banana
+    banana.lifetime=width/banana.velocity;
+    //Add banana to foodgroup
+    foodGroup.add(banana);
   }
   
 }
 
-function spawnObstacles() {
-  if(frameCount % 60 === 0) {
-    var obstacle = createSprite(600,165,10,40);
-    //obstacle.debug = true;
-    obstacle.velocityX = -(6 + 3*score/100);
-    
-    //generate random obstacles
-    var rand = Math.round(random(1,6));
-    switch(rand) {
-      case 1: obstacle.addImage(obstacle1);
-              break;
-      case 2: obstacle.addImage(obstacle2);
-              break;
-      case 3: obstacle.addImage(obstacle3);
-              break;
-      case 4: obstacle.addImage(obstacle4);
-              break;
-      case 5: obstacle.addImage(obstacle5);
-              break;
-      case 6: obstacle.addImage(obstacle6);
-              break;
-      default: break;
-    }
-    
-    //assign scale and lifetime to the obstacle           
-    obstacle.scale = 0.5;
-    obstacle.lifetime = 300;
-    //add each obstacle to the group
-    obstaclesGroup.add(obstacle);
+function bonusFood()
+{
+  //To make orange appear at interval of 250 frames
+  if(frameCount%250===0)
+  {
+  //To create orange sprite
+  orange=createSprite(width,Math.round(random(height-360,height-250)),10,10);
+  //To add image to orange 
+  orange.addImage(orange_img);
+  //Scaling to adjust the image
+  orange.scale=0.015;
+  //To assign velocity to orange
+  orange.velocityX=-(5+score/8);
+  //To assign velocity to orange
+  orange.lifetime=width/orange.velocity;
+  //To add orange to orangegroup
+  orangeGroup.add(orange);
   }
 }
 
-function reset(){
-  gameState = PLAY;
-  gameOver.visible = false;
-  restart.visible = false;
-  
-  obstaclesGroup.destroyEach();
-  cloudsGroup.destroyEach();
-  
-  trex.changeAnimation("running",trex_running);
-  
-  if(localStorage["HighestScore"]<score){
-    localStorage["HighestScore"] = score;
-  }
-  console.log(localStorage["HighestScore"]);
-  
-  score = 0;
-  
+function reset()
+{
+  //Initial 
+  gameState=PLAY;
+  score=0;
+  chances=3;
+  survivalTime=10;
+  gameOver.visible=false;
+  restart.visible=false;
 }
+
